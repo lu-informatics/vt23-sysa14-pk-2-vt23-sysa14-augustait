@@ -9,16 +9,17 @@ namespace Assignment2
 {
     public class PersonDb
     {
-        private string _connectionString;
+        private string connectionString = "Data Source=localhost;Initial Catalog=Lidl;User ID=UserLidl;Password=123;Encrypt=False;TrustServerCertificate=True;";
+        // private string connectionString = "Data Source=localhost;Initial Catalog=Lidl;User ID=UserLidl;Password=123;";
 
         public PersonDb(string connectionString)
         {
-            _connectionString = connectionString;
+            this.connectionString = connectionString;
         }
 
         public void AddPerson(int id, string firstName, string lastName, DateTime birthDate)
         {
-            using (SqlConnection connection = new SqlConnection(_connectionString))
+            using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 connection.Open();
 
@@ -33,3 +34,5 @@ namespace Assignment2
                 }
             }
         }
+    }
+}
