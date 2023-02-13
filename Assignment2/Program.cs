@@ -38,8 +38,10 @@ class Program
                         DeletePerson();
                         break;
                     case 5:
+                        Console.WriteLine("\nThank you for using the Person Management System");
                         Environment.Exit(0);
                         break;
+                        
                     default:
                         Console.WriteLine("Invalid option. Please try again.");
                         break;
@@ -56,14 +58,26 @@ class Program
     {
         Console.Write("\nEnter person ID: ");
         int id = int.MinValue;
-        while (!int.TryParse(Console.ReadLine(), out id) || personDb.FindPerson(id) != null || id < 0)
+        while (!int.TryParse(Console.ReadLine(), out id) || id < 0)
         {
-            Console.WriteLine("Invalid input, either the ID is not a valid positive number or it already exists.");
+            Console.WriteLine("Invalid input, ID must be a positive number.");
             Console.Write("Enter person ID: ");
         }
-
-        
-    Console.Write("Enter first name: ");
+        if (personDb.FindPerson(id) != null)
+        {
+            Console.WriteLine("A person with the same ID already exists, do you want to try again? (y/n)");
+            string response = Console.ReadLine();
+            if (response == "y")
+            {
+                AddPerson();
+                return;
+            }
+            else
+            {
+                return;
+            }
+        }
+        Console.Write("Enter first name: ");
         string firstName = Console.ReadLine();
         while (string.IsNullOrWhiteSpace(firstName) || firstName.Any(char.IsDigit))
         {
