@@ -1,4 +1,5 @@
 ﻿using Assignment2;
+using Microsoft.Data.SqlClient;
 using System;
 using static Assignment2.PersonDb;
 
@@ -13,7 +14,7 @@ class Program
 
         while (true)
         {
-            Console.WriteLine("\n Please select an action:");
+            Console.WriteLine("\nPlease select an action:");
             Console.WriteLine("1. Add person");
             Console.WriteLine("2. Find person");
             Console.WriteLine("3. Update person");
@@ -41,7 +42,7 @@ class Program
                         Console.WriteLine("\nThank you for using the Person Management System");
                         Environment.Exit(0);
                         break;
-                        
+
                     default:
                         Console.WriteLine("Invalid option. Please try again.");
                         break;
@@ -63,71 +64,97 @@ class Program
             Console.WriteLine("Invalid input, ID must be a positive number.");
             Console.Write("Enter person ID: ");
         }
-        if (personDb.FindPerson(id) != null)
+        try
         {
-            Console.WriteLine("A person with the same ID already exists, do you want to try again? (y/n)");
-            string response = Console.ReadLine();
-            if (response == "y")
+            if (personDb.FindPerson(id) != null)
             {
-                AddPerson();
-                return;
+                Console.WriteLine("A person with the same ID already exists, do you want to try again? (y/n)");
+                string response = Console.ReadLine();
+                if (response == "y")
+                {
+                    AddPerson();
+                    return;
+                }
+                else
+                {
+                    return;
+                }
             }
-            else
-            {
-                return;
-            }
-        }
-        Console.Write("Enter first name: ");
-        string firstName = Console.ReadLine();
-        while (string.IsNullOrWhiteSpace(firstName) || firstName.Any(char.IsDigit))
-        {
-            Console.WriteLine("Invalid input, first name cannot be empty or contain digits.");
             Console.Write("Enter first name: ");
-            firstName = Console.ReadLine();
-        }
+            string firstName = Console.ReadLine();
+            while (string.IsNullOrWhiteSpace(firstName) || firstName.Any(char.IsDigit))
+            {
+                Console.WriteLine("Invalid input, first name cannot be empty or contain digits.");
+                Console.Write("Enter first name: ");
+                firstName = Console.ReadLine();
+            }
 
-        Console.Write("Enter last name: ");
-        string lastName = Console.ReadLine();
-        while (string.IsNullOrWhiteSpace(lastName) || lastName.Any(char.IsDigit))
-        {
-            Console.WriteLine("Invalid input, last name cannot be empty or contain digits.");
             Console.Write("Enter last name: ");
-            lastName = Console.ReadLine();
-        }
+            string lastName = Console.ReadLine();
+            while (string.IsNullOrWhiteSpace(lastName) || lastName.Any(char.IsDigit))
+            {
+                Console.WriteLine("Invalid input, last name cannot be empty or contain digits.");
+                Console.Write("Enter last name: ");
+                lastName = Console.ReadLine();
+            }
 
-        Console.Write("Enter birth date (YYYY-MM-DD): ");
-        DateTime birthDate = DateTime.MinValue;
-        while (!DateTime.TryParse(Console.ReadLine(), out birthDate))
-        {
-            Console.WriteLine("Invalid input, enter a valid birth date (YYYY-MM-DD).");
             Console.Write("Enter birth date (YYYY-MM-DD): ");
-        }
+            DateTime birthDate = DateTime.MinValue;
+            while (!DateTime.TryParse(Console.ReadLine(), out birthDate))
+            {
+                Console.WriteLine("Invalid input, enter a valid birth date (YYYY-MM-DD).");
+                Console.Write("Enter birth date (YYYY-MM-DD): ");
+            }
 
-        personDb.AddPerson(id, firstName, lastName, birthDate);
-        Console.WriteLine("Person added successfully.");
+            personDb.AddPerson(id, firstName, lastName, birthDate);
+            Console.WriteLine("Person added successfully.");
+        }
+        catch (SqlException ex)
+        {
+            Console.WriteLine("Error: There was a problem with the database connection. Please try again later.");
+            Console.WriteLine($"Error details: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("An error occurred while trying to add the person. Please try again.");
+            Console.WriteLine($"Error details: {ex.Message}");
+        }
     }
 
     static void FindPerson()
     {
-        Console.Write("\nEnter person ID: ");
-        int id = int.MinValue;
-        while (!int.TryParse(Console.ReadLine(), out id))
+        try
         {
-            Console.WriteLine("Invalid input, ID must be a number.");
-            Console.Write("Enter person ID: ");
-        }
+            Console.Write("\nEnter person ID: ");
+            int id = int.MinValue;
+            while (!int.TryParse(Console.ReadLine(), out id))
+            {
+                Console.WriteLine("Invalid input, ID must be a number.");
+                Console.Write("Enter person ID: ");
+            }
 
-        Person person = personDb.FindPerson(id);
-        if (person == null)
-        {
-            Console.WriteLine("Person not found");
+            Person person = personDb.FindPerson(id);
+            if (person == null)
+            {
+                Console.WriteLine("Person not found");
+            }
+            else
+            {
+                Console.WriteLine($"ID: {person.Id}");
+                Console.WriteLine($"First name: {person.FirstName}");
+                Console.WriteLine($"Last name: {person.LastName}");
+                Console.WriteLine($"Birth date: {person.BirthDate:yyyy-MM-dd}");
+            }
         }
-        else
+        catch (SqlException ex)
         {
-            Console.WriteLine($"ID: {person.Id}");
-            Console.WriteLine($"First name: {person.FirstName}");
-            Console.WriteLine($"Last name: {person.LastName}");
-            Console.WriteLine($"Birth date: {person.BirthDate:yyyy-MM-dd}");
+            Console.WriteLine("Error: Could not connect to database. Please try again later.");
+            Console.WriteLine($"Details: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("An unexpected error occurred. Please try again later.");
+            Console.WriteLine($"Details: {ex.Message}");
         }
     }
     static void UpdatePerson()
@@ -144,7 +171,17 @@ class Program
             return;
         }
 
-        Person person = personDb.FindPerson(id);
+        Person person = null;
+        try
+        {
+            person = personDb.FindPerson(id);
+        }
+        catch (SqlException)
+        {
+            Console.WriteLine("A database error occurred while finding the person. Please try again later.");
+            return;
+        }
+
         if (person == null)
         {
             Console.WriteLine("Person not found");
@@ -159,8 +196,16 @@ class Program
         try
         {
             DateTime birthDate = DateTime.Parse(Console.ReadLine());
-            personDb.UpdatePerson(id, firstName, lastName, birthDate);
-            Console.WriteLine("Person updated successfully.");
+            try
+            {
+                personDb.UpdatePerson(id, firstName, lastName, birthDate);
+                Console.WriteLine("Person updated successfully.");
+            }
+            catch (SqlException)
+            {
+                Console.WriteLine("A database error occurred while updating the person. Please try again later.");
+                return;
+            }
         }
         catch (FormatException)
         {
@@ -170,10 +215,21 @@ class Program
     }
 
     static void DeletePerson()
+    {
+        Console.Write("\nEnter person ID: ");
+        int id;
+        try
         {
-            Console.Write("\nEnter person ID: ");
-            int id = int.Parse(Console.ReadLine());
+            id = int.Parse(Console.ReadLine());
+        }
+        catch (FormatException)
+        {
+            Console.WriteLine("Invalid input. Please enter a valid number for the person ID.");
+            return;
+        }
 
+        try
+        {
             Person person = personDb.FindPerson(id);
             if (person == null)
             {
@@ -193,4 +249,13 @@ class Program
                 Console.WriteLine("Deletion cancelled");
             }
         }
+        catch (SqlException ex)
+        {
+            Console.WriteLine($"Error occurred while deleting person: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error occurred while deleting person: {ex.Message}");
+        }
     }
+}
